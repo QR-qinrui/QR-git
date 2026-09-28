@@ -1,0 +1,6 @@
+# dsh-compat-settings-scope 兼容垫片
+# 在 profile 顶层注册 settingsScope -> webUiSettings 的别名服务。
+# 只有当本包被列进 profile 的 dsh.profile.bundles 时这层才会生效。
+- insert:
+    - id: compat-settings-scope
+      name: dsh-compat-settings-scope

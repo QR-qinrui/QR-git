@@ -1,0 +1,18 @@
+{
+  "name": "dsh-compat-kit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DeepSeek Harness (dsh) 0.1.7+ compatibility kit: production-tested compat shims for third-party plugins built against older dsh APIs, with reproducible installer and deterministic self-check.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "check": "node scripts/self-check.mjs",
+    "install:profile": "node scripts/install.mjs"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "license": "MIT"
+}

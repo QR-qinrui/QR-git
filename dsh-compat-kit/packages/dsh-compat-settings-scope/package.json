@@ -1,0 +1,28 @@
+{
+  "name": "dsh-compat-settings-scope",
+  "version": "1.1.0",
+  "private": true,
+  "description": "兼容垫片：把已废弃的 settingsScope 服务名桥接回 webUiSettings，并在宿主侧补齐 0.1.2-era settings.register API，让旧版第三方插件在 dsh 0.1.7+ 上正常激活",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.1.7-rc.2"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "license": "MIT"
+}

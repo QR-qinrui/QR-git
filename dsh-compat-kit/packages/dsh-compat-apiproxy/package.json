@@ -1,0 +1,19 @@
+{
+  "name": "@deepseek-ai/dsh-host-apiproxy",
+  "version": "0.1.1-rc.2-shim.1",
+  "description": "dsh-compat-apiproxy: deployment-local compat shim. Provides RpcId brand export required by @limuyang2/dsh-agent-team on dsh 0.1.7 hosts where the real apiproxy package (0.1.1-era, 25+ legacy deps) is absent. dsh-selfheal:apiproxy-shim@1",
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "private": true
+}
