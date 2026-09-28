@@ -1,0 +1,5 @@
+# dsh-afo：AI 资产文件扫描归类与安全迁移
+# 只有当本包被列进 profile 的 dsh.profile.bundles 时这层才会生效。
+- insert:
+    - id: dsh-afo
+      name: "dsh-afo"
