@@ -170,5 +170,37 @@ class TestCliSmoke(TempDirCase):
         self.assertFalse(os.path.exists(dst))  # 未执行任何改动
 
 
+class TestSelfcheckSeverity(unittest.TestCase):
+    """自检报告：warn 级环境提示不参与通过判定（回归：可选符号链接
+    能力不可用曾导致整个 selfcheck 误报失败）。"""
+
+    def test_warn_does_not_fail_report(self):
+        from afo.selfcheck import SelfcheckReport
+        rep = SelfcheckReport()
+        rep.add("核心项A", True)
+        rep.add("符号链接可用", False, "环境受限", severity="warn")
+        self.assertTrue(rep.ok)           # 警告不拖垮整体结论
+        self.assertEqual(len(rep.warnings), 1)
+
+    def test_core_failure_fails_report(self):
+        from afo.selfcheck import SelfcheckReport
+        rep = SelfcheckReport()
+        rep.add("核心项A", False)
+        rep.add("符号链接可用", False, "环境受限", severity="warn")
+        self.assertFalse(rep.ok)          # 核心项失败仍然判定失败
+
+    def test_format_marks_warn_and_core_counts(self):
+        from afo.selfcheck import SelfcheckReport, format_selfcheck_text
+        rep = SelfcheckReport()
+        rep.add("核心项A", True)
+        rep.add("核心项B", True)
+        rep.add("符号链接可用", False, "环境受限", severity="warn")
+        text = format_selfcheck_text(rep)
+        self.assertIn("⚠️", text)
+        self.assertNotIn("❌", text)
+        self.assertIn("核心项 2/2 项通过", text)
+        self.assertIn("核心功能正常", text)
+
+
 if __name__ == "__main__":
     unittest.main()

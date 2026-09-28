@@ -2,7 +2,8 @@
 
 自检在系统临时目录下创建独立沙盒，真实跑一遍
 "扫描→方案→迁移→复检→回滚"全流程，全程不触碰用户任何真实文件。
-输出逐项 ✅/❌ 检测报告，进程退出码 0=全部通过，1=存在失败项。
+输出逐项 ✅/⚠️/❌ 检测报告（⚠️ 为环境提示，不计入判定），
+进程退出码 0=核心项全部通过，1=存在核心失败项。
 """
 
 from __future__ import annotations
@@ -30,19 +31,29 @@ class Check:
     name: str
     passed: bool
     detail: str = ""
+    severity: str = "check"  # "check"=计入通过判定；"warn"=仅提示，不影响结论
 
 
 @dataclass
 class SelfcheckReport:
     checks: list[Check] = field(default_factory=list)
 
-    def add(self, name: str, passed: bool, detail: str = "") -> bool:
-        self.checks.append(Check(name=name, passed=passed, detail=detail))
+    def add(self, name: str, passed: bool, detail: str = "",
+            severity: str = "check") -> bool:
+        self.checks.append(Check(name=name, passed=passed, detail=detail,
+                                 severity=severity))
         return passed
 
     @property
     def ok(self) -> bool:
-        return all(c.passed for c in self.checks)
+        # 只有 severity=="check" 的核心功能项参与通过判定；
+        # 环境能力提示（warn）不导致整体失败。
+        return all(c.passed for c in self.checks if c.severity == "check")
+
+    @property
+    def warnings(self) -> list[Check]:
+        return [c for c in self.checks
+                if c.severity == "warn" and not c.passed]
 
 
 def _build_sandbox(root: str) -> str:
@@ -84,11 +95,16 @@ def run_selfcheck(verbose: bool = True) -> SelfcheckReport:
     try:
         caps = linker.detect_capabilities(sandbox)
         report.add("临时目录可写", True, sandbox)
+        # 链接能力属于环境提示（warn）：link 模式会自动选用可用方式，
+        # 两者皆不可用时迁移自动降级为 move，核心功能不受影响。
         if linker.IS_WINDOWS:
             report.add("目录联接（Junction）可用", caps["junction"],
-                       "不可用时 link 模式将自动降级/报错")
+                       "不可用时 link 模式将尝试符号链接或降级为 move",
+                       severity="warn")
         report.add("符号链接可用", caps["symlink"],
-                   "Windows 无开发者模式/管理员权限时可能不可用")
+                   "Windows 无开发者模式/管理员权限时不可用；"
+                   "不影响核心功能（Junction/move 可替代）",
+                   severity="warn")
 
         # 4) 沙盒全链路：scan → plan → migrate(link/move) → verify → rollback
         src = _build_sandbox(sandbox)
@@ -150,10 +166,20 @@ def run_selfcheck(verbose: bool = True) -> SelfcheckReport:
 def format_selfcheck_text(report: SelfcheckReport) -> str:
     lines = [f"afo selfcheck（版本 {__version__}）", ""]
     for c in report.checks:
-        mark = "✅" if c.passed else "❌"
+        if c.passed:
+            mark = "✅"
+        elif c.severity == "warn":
+            mark = "⚠️"
+        else:
+            mark = "❌"
         suffix = f" — {c.detail}" if c.detail else ""
         lines.append(f"{mark} {c.name}{suffix}")
-    passed = sum(1 for c in report.checks if c.passed)
-    lines += ["", f"结果：{passed}/{len(report.checks)} 项通过"
-              + ("，核心功能正常。" if report.ok else "，存在失败项！")]
+    gates = [c for c in report.checks if c.severity == "check"]
+    passed = sum(1 for c in gates if c.passed)
+    summary = f"结果：核心项 {passed}/{len(gates)} 项通过"
+    warns = report.warnings
+    if warns:
+        summary += f"，{len(warns)} 条环境提示（不影响核心功能）"
+    summary += "，核心功能正常。" if report.ok else "，存在失败项！"
+    lines += ["", summary]
     return "\n".join(lines)
