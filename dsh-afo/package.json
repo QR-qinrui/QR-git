@@ -1,5 +1,5 @@
 {
-  "name": "@qr/afo-file-organizer",
+  "name": "dsh-afo",
   "version": "1.0.0",
   "private": true,
   "description": "AI 资产文件扫描归类与安全迁移（afo Python 核心的 dsh 挂载层）",

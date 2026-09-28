@@ -104,7 +104,7 @@
 
 ## 六、dsh 插件配置
 
-`dsh-plugin/package.json` 关键字段：
+`dsh-afo/package.json` 关键字段：
 
 - `dsh.bundle.patch` → `cordis.patch.yml`（insert 挂载声明，id 须与包名对应）；
 - `dshx.contributes.tools` → `["afo_organize"]`（工具发现清单）；

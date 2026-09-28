@@ -6,7 +6,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { runAfo, summarize } from './runner.mjs'
 
-export const name = 'afo-file-organizer'
+export const name = 'dsh-afo'
 export const inject = ['tools', 'systemPrompt']
 
 const SYSTEM_PROMPT_TEXT = `## 文件整理工具 afo_organize 使用规范
@@ -73,7 +73,7 @@ export function apply(ctx) {
   ctx.effect(() => ctx.tools.register(afoOrganizeTool()), 'afo.tool')
   if (ctx.systemPrompt?.section) {
     ctx.effect(
-      () => ctx.systemPrompt.section({ name: 'afo-file-organizer', order: 900, text: SYSTEM_PROMPT_TEXT }),
+      () => ctx.systemPrompt.section({ name: 'dsh-afo', order: 900, text: SYSTEM_PROMPT_TEXT }),
       'afo.systemPrompt',
     )
   }

@@ -53,8 +53,8 @@ Windows PowerShell 设置 PYTHONPATH：`$env:PYTHONPATH = "src"`。
 ### 方式 B：dsh 插件
 
 ```bash
-# 插件目录已内嵌 Python 核心（dsh-plugin/vendor/afo），无需额外安装
-dsh plugin --profile web add file:<本仓库绝对路径>/dsh-plugin
+# 插件目录已内嵌 Python 核心（dsh-afo/vendor/afo），无需额外安装
+dsh plugin --profile web add file:<本仓库绝对路径>/dsh-afo
 # 指定 Python 解释器（PATH 中无 python 时）：
 #   Windows: setx AFO_PYTHON "C:\path\to\python.exe"
 #   macOS/Linux: export AFO_PYTHON=/usr/bin/python3
@@ -102,7 +102,7 @@ afo selfcheck --json   # 机读 JSON（供程序调用）
 
 ```bash
 PYTHONPATH=src python -m unittest discover -s tests -v   # Python 核心 11 项
-cd dsh-plugin && AFO_PYTHON=<python路径> node test/smoke.mjs  # dsh 层 11 项
+cd dsh-afo && AFO_PYTHON=<python路径> node test/smoke.mjs  # dsh 层 11 项
 ```
 
 ## 兼容性矩阵
@@ -149,7 +149,7 @@ ai-file-organizer/
 │   ├── selfcheck.py      # 沙盒全链路自检
 │   └── cli.py            # 六命令 CLI（--json 机读输出）
 ├── tests/test_core.py    # 单元测试（11 项）
-├── dsh-plugin/           # dsh 挂载层
+├── dsh-afo/              # dsh 挂载层（插件包名 dsh-afo）
 │   ├── src/index.js      # defineTool 注册 + 系统提示注入
 │   ├── src/runner.mjs    # 纯逻辑层（参数校验/调起 Python/JSON 解析）
 │   ├── vendor/afo/       # 内嵌的 Python 核心（开箱即用）
