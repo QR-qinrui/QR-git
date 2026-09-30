@@ -1,0 +1,45 @@
+{
+  "_说明": "DSH 宿主升级的目标版本知识与适配动作。通用引擎 升级DSH运行时.ps1 读这份配置执行；换目标版本时只需改这里。",
+  "targetVersion": "0.2.0-rc.2",
+  "stageDir": "runtime-next",
+
+  "_bundlesToAdd": "目标版本默认组合里缺失、但需要补回的 bundle（0.2.0 把 schedule 三件套移出了默认 Web 组合）",
+  "bundlesToAdd": [
+    "@deepseek-ai/dsh-experimental-schedule-bundle"
+  ],
+
+  "_packageUpgrades": "升到原生兼容的插件版本（package: version）",
+  "packageUpgrades": {
+    "dsh-better-sidebar": "0.24.1",
+    "dsh-session-insights": "0.5.1"
+  },
+
+  "_exemptions": "上游升无可升、或精确 pin 与宿主差一个预发布，需要按精确版本豁免的 包@版本",
+  "exemptions": [
+    "dsh-session-insights@0.5.1",
+    "dsh-context-doctor@0.7.2",
+    "@loserfox/distill@0.1.0"
+  ],
+
+  "_exemptionsToRevoke": "升级后不再需要的旧豁免（包@版本）",
+  "exemptionsToRevoke": [
+    "dsh-session-insights@0.5.0"
+  ],
+
+  "_localPeerPatches": "本地 link/file 包：把 peer 上界放宽即可原生通过。replace 是第一处命中替换（会先备份原文件）",
+  "localPeerPatches": {
+    "deepseek-idesign": {
+      "from": ">=0.0.1-rc.1 <0.2.0-0",
+      "to": ">=0.0.1-rc.1 <0.3.0-0"
+    }
+  },
+
+  "_assertContains": "交换后必须出现在 dsh --dump-config 组合树里的字符串（验收断言）",
+  "assertContains": [
+    "@linxin666/dsh-web-all",
+    "web-ui-task-board",
+    "- id: time-context",
+    "- id: schedule",
+    "- id: ui-schedule"
+  ]
+}

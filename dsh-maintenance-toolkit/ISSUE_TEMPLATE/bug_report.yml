@@ -1,0 +1,57 @@
+name: Bug 报告
+description: 三件套脚本运行出错、报告异常、补丁失效等
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交前请先脱敏：私有路径、token、cookie 等内容请替换成占位符。
+  - type: dropdown
+    id: flow
+    attributes:
+      label: 涉及流程
+      options:
+        - A · F12 自查修复
+        - B · 插件无损升级
+        - C · 宿主升级 SOP
+        - 维护链 / 补丁体系
+        - 其他
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: 环境版本
+      description: 宿主版本（runtime\...\dsh\package.json）、相关插件版本、脚本文件版本
+      placeholder: 宿主 0.2.0-rc.2，dsh-web-all 0.4.4
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      description: 运行了哪条命令 / 双击了哪个入口，参数是什么
+      placeholder: |
+        1. 双击 f12-audit-repair.cmd
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期与实际
+      description: 预期行为 vs 实际现象（含退出码）
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 证据
+      description: f12-report-*.md、修复记录、日志的关键行（[FAIL]、skipping profile bundle、签名表命中项等）
+      render: text
+  - type: textarea
+    id: context
+    attributes:
+      label: 补充信息
+      description: 是否已经重跑过、是否回滚过、其他线索

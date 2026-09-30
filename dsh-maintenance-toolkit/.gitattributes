@@ -1,0 +1,3 @@
+# Preserve exact bytes: the .ps1/.cmd scripts are battle-tested on
+# Windows PowerShell 5.1 and cmd.exe; never let git rewrite line endings.
+* -text

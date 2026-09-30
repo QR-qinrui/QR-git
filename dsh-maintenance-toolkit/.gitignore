@@ -1,0 +1,13 @@
+# build artifacts
+*.zip
+dist/
+*.bak-*
+
+# OS noise
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# editor / tool noise
+.idea/
+.vscode/
