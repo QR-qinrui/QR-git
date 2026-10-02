@@ -1,0 +1,4 @@
+# 参考字体体积大且为 SIL OFL 第三方字体，不入库；首次使用运行 scripts/ref_fonts.py 下载
+ref_fonts/
+__pycache__/
+*.pyc
