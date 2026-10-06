@@ -1,7 +1,7 @@
 ---
 name: ai-github-scanner
-description: AI驱动的GitHub资源自动筛选体系 + 7角色自分工AI协作团队。自动扫描GitHub项目，按代码质量/活跃度/社区评价/实用性/安全信号五维评分，≥85分自动通过安全门后安装到~/.workbuddy/skills/。配套主导者/整体审查者/前端/后端/代码审查/信息寻找者/同步分发者/总结优化者8角色协作协议。当用户需要构建GitHub项目自动评估系统、搭建AI协作团队框架、批量筛选开源skill/plugin资源、定期扫描优质仓库并入体系时使用本skill。本skill设计为可随时进化：评分权重、安全规则、扫描领域、角色协议均通过 references/evolution_log.md 记录迭代历史，通过 assets/config_template.yaml 暴露所有可调参数。
-version: 1.0.0
+description: AI驱动的GitHub资源自动筛选体系 + 7角色自分工AI协作团队 + 知识库自动归纳模块。自动扫描GitHub项目，按代码质量/活跃度/社区评价/实用性/安全信号五维评分，≥85分自动通过安全门后安装到~/.workbuddy/skills/。配套主导者/整体审查者/前端/后端/代码审查/信息寻找者/同步分发者/总结优化者8角色协作协议。v1.2.0 新增 knowledge/ 模块：项目完成 → 自动归纳总结 → 入库 → 索引 → 同步到 GitHub，与 evolution_log 形成"过程日志 + 项目档案"双轨记忆。当用户需要构建GitHub项目自动评估系统、搭建AI协作团队框架、批量筛选开源skill/plugin资源、定期扫描优质仓库并入体系、自动沉淀项目档案到知识库时使用本skill。本skill设计为可随时进化：评分权重、安全规则、扫描领域、角色协议、知识库扩展均通过 references/evolution_log.md 记录迭代历史，通过 assets/config_template.yaml 暴露所有可调参数。
+version: 1.2.0
 agent_created: true
 follow_up_questions: 最后询问用户是否需要立即部署或调整评分阈值
 ---
@@ -196,3 +196,67 @@ scripts目录提供3个可执行脚本：
 | 装skill | marketplace-skill-installer |
 | 修bug | systematic-debugging |
 | 提交代码 | github |
+
+## 内嵌知识库模块（v1.2.0 新增）
+
+每个项目完成后自动归纳总结入库，与 evolution_log 形成"过程日志 + 项目档案"双轨记忆体系。完整协议见 `references/knowledge_protocol.md`。
+
+### 模块结构
+
+```
+knowledge/
+├── __init__.py          # 模块入口与导出
+├── templates.py         # 3 类 entry 模板：project_summary / pattern / lesson
+├── storage.py           # 存储路径管理（默认 ~/.workbuddy/knowledge/）
+├── ingestor.py          # 项目归纳引擎（接收项目路径或元信息 dict）
+└── indexer.py           # 索引构建器（生成 INDEX.md + tags/{tag}.md）
+```
+
+### 触发时机（自动归纳）
+
+满足任一条件即触发：
+1. 用户显式："把本项目总结入库"、"归纳到知识库"
+2. **present_files 被调用**（视为交付完成）
+3. **git commit + push 完成**（视为发布完成）
+4. 完成超过 8 个工具调用的复杂任务（通过 `assets/config_template.yaml` 的 `knowledge_base.trigger_threshold_tools` 可调）
+
+### 入库流程
+
+```
+1. 接收项目路径 → 自动检测项目类型（PROJECT_SIGNATURES）
+2. 自动推断标签（TAG_SIGNATURES）
+3. 生成 project_id（日期 + md5）
+4. 从 references/evolution_log.md 抽取本次相关条目
+5. 扫描项目根目录 → 生成"关键文件"清单
+6. 调用 ProjectSummaryTemplate.render_with_meta 渲染 markdown
+7. 写入 ~/.workbuddy/knowledge/projects/YYYY-MM/YYYY-MM-DD-{slug}.md
+8. 调用 KnowledgeIndexer.rebuild() 重建 INDEX.md 与 tags/
+```
+
+### 关键脚本（scripts/）
+
+| 脚本 | 用途 |
+|------|------|
+| `scripts/ingest_project.py` | 项目归纳入库 CLI |
+| `scripts/build_kb_index.py` | 重建知识库索引 |
+| `scripts/sync_to_github.py` | 同步 skill + 知识库到 GitHub 仓库 |
+
+### 同步到 GitHub
+
+`sync_to_github.py` 工作流：
+1. 检查认证（GITHUB_TOKEN 优先 → gh CLI 兜底）
+2. 拷贝 skill 到临时 git 工作区
+3. 可选附带 ~/.workbuddy/knowledge/ 内容到 knowledge/ 子目录
+4. git init + add + commit + push 到目标仓库的 main 分支
+5. 清理临时目录
+
+默认配置（在 `assets/config_template.yaml` 的 `knowledge_base.github_sync`）：
+- 仓库：`https://github.com/QR-qinrui/QR-git`
+- 分支：`main`
+- 同步范围：skill + 知识库（可关闭）
+
+### 进化点6 · 知识库扩展
+
+触发：检测到新项目类型频繁、新标签模式需要补充、新 entry 类型需求
+操作：扩展 `knowledge/ingestor.py` 的 `PROJECT_SIGNATURES` / `TAG_SIGNATURES`，或新增 templates 子类
+约束：新 entry 类型必须能被 `storage.resolve` 处理 + `indexer._render_index` 罗列

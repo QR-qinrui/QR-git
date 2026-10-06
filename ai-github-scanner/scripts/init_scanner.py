@@ -23,6 +23,7 @@ def init(target: Path) -> None:
     target.mkdir(parents=True, exist_ok=True)
     (target / "scanner").mkdir(exist_ok=True)
     (target / "team").mkdir(exist_ok=True)
+    (target / "knowledge").mkdir(exist_ok=True)  # v1.2.0 知识库模块
     (target / "data" / "scanned").mkdir(parents=True, exist_ok=True)
     (target / "data" / "evaluated").mkdir(parents=True, exist_ok=True)
     (target / "data" / "reports").mkdir(parents=True, exist_ok=True)
@@ -38,17 +39,19 @@ def init(target: Path) -> None:
         print(f"  [=] config.yaml 已存在，跳过")
 
     # 创建 __init__.py
-    for pkg in ["scanner", "team"]:
+    for pkg in ["scanner", "team", "knowledge"]:
         init_file = target / pkg / "__init__.py"
         if not init_file.exists():
             init_file.write_text(
-                f'"""{pkg} package"""\n__version__ = "1.0.0"\n', encoding="utf-8")
+                f'"""{pkg} package"""\n__version__ = "1.2.0"\n', encoding="utf-8")
 
     print(f"\n[OK] scanner项目已初始化: {target}")
     print("\n下一步：")
     print(f"  1. 编辑 {cfg_dst} 调整扫描领域与评分权重")
-    print("  2. 实现scanner/{github_client,evaluator,installer,report,seed_data}.py")
-    print("  3. 运行: python run_scan.py")
+    print(f"  2. 实现scanner/{{github_client,evaluator,installer,report,seed_data}}.py")
+    print(f"  3. 实现knowledge/{{__init__,templates,storage,ingestor,indexer}}.py（知识库模块）")
+    print(f"  4. 运行: python scripts/ingest_project.py --path . --goal '初始化'")
+    print(f"  5. 运行: python scripts/build_kb_index.py  # 重建索引")
 
 
 def main():

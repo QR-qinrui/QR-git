@@ -108,9 +108,37 @@ report:
   include_charts: true
   top_n: 20
 
+# ===== 知识库 =====（v1.2.0 新增）
+knowledge_base:
+  enabled: true
+  kb_root: "~/.workbuddy/knowledge"          # 知识库根目录
+  auto_ingest_on_complete: true              # 项目完成时自动归纳入库
+  trigger_threshold_tools: 8                 # 工具调用数 ≥ 此值视为"复杂任务"自动触发
+  ingest_complete_signals:                   # 自动触发归纳的信号
+    - present_files                           # 执行了 present_files
+    - git_commit_push                         # 执行了 commit+push
+    - user_explicit_done                      # 用户说"做完了/完成了"
+  allowed_entry_types:
+    - project_summary
+    - pattern
+    - lesson
+  storage_layout:
+    projects_subdir: "projects"               # 按月分目录: projects/YYYY-MM/
+    patterns_subdir: "patterns"
+    lessons_subdir: "lessons"
+    tags_subdir: "tags"                       # 自动生成的标签索引
+    index_file: "INDEX.md"
+  github_sync:
+    enabled: true
+    repo: "https://github.com/QR-qinrui/QR-git"
+    branch: "main"
+    include_knowledge: true                   # 同步时附带知识库内容
+    auth_preference: "gh-cli"                 # gh-cli | token | auto
+
 # ===== 进化点调整速查 =====
 # 进化点1 评分权重调优 → 改 scoring_weights（总和=1.0）
 # 进化点2 安全规则扩展 → 改 safety_gate.block_patterns
 # 进化点3 扫描领域调整 → 改 scan_domains（增删条目）
 # 进化点4 角色协议演进 → 改 references/team_protocol.md + team/protocol.py
 # 进化点5 经验沉淀 → references/evolution_log.md 追加记录
+# 进化点6 知识库扩展 → 改 knowledge/ 模块 + references/knowledge_protocol.md
