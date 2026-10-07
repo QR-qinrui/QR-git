@@ -55,6 +55,43 @@
 - `ai-github-scanner/.gitignore`（已添加.env排除规则）
 - `ai-github-scanner/scanner/github_client.py`（6处gh调用+3处REST增强）
 
+## 2026-10-07 v1.2.0 · 限流分层调度 + 0候选兜底
+
+**触发**：用户指出在search配量低时应用core资源池做轻度抓取，0候选时复用上一轮报告避免日报告断档。已记入 automation memory。
+
+**变更**：
+- `scanner/github_client.py`:
+  - `_check_rate_limit(resource)` 参数化：支持 "search"(30/min) 与 "core"(5000/hr) 两池独立检查
+  - 阈值策略改为按 limit 20% 计算（search保留6次，core保留1000次），修复原本固定 rate_buffer(100) 永远阻塞 search 池的 bug
+  - 新增 `_fetch_via_core_pool(owner)` 方法：search池耗尽时用core池 /users/{owner}/repos 抓取（100/页）
+  - 新增 `scan_domains_with_fallback(domains, fallback_owners)` 方法：search池耗尽且候选不足10时，自动切换core池抓取8个高质量owner（modelcontextprotocol/anthropics/langchain-ai/microsoft/crewAIInc/punkpeye/browsermcp/getcursor）的repos作为兜底候选
+- `run_scan.py`:
+  - 新增 `load_last_report()` 函数：从 data/reports/report_*.json 按mtime排序加载最新一份
+  - 新增 `FALLBACK_OWNERS` 常量：8个高质量owner清单
+  - `run_scan` 改用 `scan_domains_with_fallback`，0候选时调用 `load_last_report()` 复用上一轮报告，标记 `fallback_used: True`
+
+**效果**：
+- 限流分层调度验证：
+  - search池可用：True（30/30，修复后阈值6，30>6通过）
+  - core池可用：True（5000/5000，阈值1000，5000>1000通过）
+  - langchain-ai core池抓取：100个repos，首个 langchain-ai/langchain-aws stars=350 pushed=2026-10-07（实时数据，验证core池可用性）
+- 0候选兜底验证：
+  - `load_last_report()` 成功加载 report_2026-10-05_17-47-00.json
+  - 含14个候选项目，6 auto_install / 6 recommend / 1 record / 1 drop
+  - 即使本轮扫描0候选，也能复用上一轮报告避免日报告断档
+- 核心痛点消除：
+  - 活跃度与社区评分不再被封顶在69.5（gh CLI恢复了 contributors/commit_activity/recent_releases 增量数据获取）
+  - search池耗尽时不再中断扫描（自动切换core池）
+  - 0候选时不再断档日报告（自动复用上一轮）
+
+**回滚条件**：
+- 如不需要core池fallback：将 run_scan.py 中的 `scan_domains_with_fallback(domains, FALLBACK_OWNERS)` 改回 `scan_domains(domains)`
+- 如不需要0候选兜底：删除 run_scan.py 中 `if not candidates:` 块内的 `load_last_report()` 调用
+
+**关键文件**：
+- `ai-github-scanner/scanner/github_client.py`（新增3个方法+1处修复）
+- `ai-github-scanner/run_scan.py`（新增2个函数+1常量+1处流程改造）
+
 ---
 
 ## 2026-10-07 v1.2.0 · 知识库自动归纳模块
@@ -108,6 +145,63 @@ knowledge/
 - `scripts/ingest_project.py`、`scripts/build_kb_index.py`、`scripts/sync_to_github.py`
 - `references/knowledge_protocol.md`
 - `assets/config_template.yaml`（新增 knowledge_base 段）
+
+---
+
+## 2026-10-07 v1.2.1 · 数据完整性修复（评分天花板根因）
+
+**触发**：待跟进项「0 auto_install 是评分模型问题还是数据质量问题？需采样核对」。
+采样发现：上一轮报告 304/304 个项目的 contributors/commits_last_4w/releases/readme 四项
+二级数据全部为 0，理论分数天花板恰为 69.45 < 推荐阈值 70 —— **任何项目都无法被推荐或安装**，
+属结构性故障而非评分严格。根因：4 个二级数据方法只有 gh CLI 通道、无 REST 兜底；
+gh 不可用时静默返回空值并被评分层按 0 分计。推翻 v1.2.0 记录中「核心痛点已消除」的结论。
+
+**变更**：
+- `scanner/github_client.py`:
+  - 新增 `_rest_get(path, params, raw)` REST兜底通道，三态返回：ok / not_found / error
+  - 4 个二级数据方法（commit_activity / recent_releases / contributors / readme）增加 REST 兜底；
+    语义改为「成功→真实值（空也是真实值）；gh与REST均失败→None（数据缺失）」
+  - `_rest_get` 对 stats 接口 202（计算中）做退避重试（2s、5s）
+  - `_scan_one_domain` 空结果不再写入缓存（避免限流失败污染 6 小时缓存）
+- `scanner/evaluator.py`:
+  - 新增 `_combine()` 缺失数据感知加权合并：score=None 剔除该项、其余权重按比例归一化；
+    真实 0 值仍正常计 0 分；全部缺失返回中性分 50
+  - code_quality/activity/practicality 三维改用 `_combine`，details 记录 `missing_data`
+  - 新增决策完备性门：核心证据缺失时禁止 auto_install（降级 recommend），
+    由 `thresholds.require_full_data_for_auto_install` 控制（默认 true）
+  - `EvaluationResult.missing_data` 属性汇总缺失项；`to_dict()` 增加 `missing_data` 字段；
+    summary 加注「数据不完整」
+- `run_scan.py`: 评估后打印数据缺失统计 `[WARN] N/M 个项目存在数据缺失`；readme 取值适配 None
+- `config.yaml` + `assets/config_template.yaml`: 新增 `require_full_data_for_auto_install: true`
+- `assets/scanner_impl/`（新增）: 内置修复后的参考实现（5个scanner模块 + run_scan.py + requirements.txt），
+  `scripts/init_scanner.py` 初始化新项目时自动复制，避免修复只存在于单一工作区
+- `references/scoring_formula.md`: 新增「缺失数据语义（v1.2.1）」章节（三态语义/重归一化公式/完备性门）
+- `SKILL.md`: version 1.2.0 → 1.2.1
+
+**效果**（验证 14/14 通过）：
+- 模拟 gh 不可用：4/4 方法经 REST 兜底成功获取（commit 52周 / releases 5个 / contributors 100人 / readme 5891字符）
+- 合成数据三场景：完整数据→auto_install(96.6)；全部缺失→recommend(95.4，被完备性门拦截)；
+  真实为空→record(67.4，真实0值正常计分)
+- Top15 真实重评分：全部 69.5 分 → 14 auto_install + 1 recommend（90.2~98.7）
+- 全量 304 候选重评分（修复后）：**87 auto_install / 112 recommend / 93 record / 12 drop**
+  （修复前 0/0/260/44）；分数 min 36.6 / max 98.7 / avg 75.8；数据缺失仅 13/304（4.3%，
+  均为 commits_last_4w 的 stats 接口 202 计算中，已按完备性门降级为 recommend）
+- 阈值参考：≥85分 94个(30.9%) / ≥90分 55个(18.1%) / ≥93分 35个(11.5%)（评分文档预期 auto_install 占比 10-30%）
+
+**已知遗留（后续可优化）**：
+- installer 无「已安装跳过」逻辑，每日会重复 clone+部署全部 ≥85 分项目（87个/日，耗时且会覆盖本地改动）
+- search API 的 watchers_count 等于 stars（subscribers_count 在 search 响应中缺失时 fallback 导致），
+  community 维度的 watch_score 区分度不足；可在需要时对 Top 候选补一次 repo 详情调用
+- 13 个 202 持续未就绪的 commits 数据可考虑更长退避或纳入下一轮缓存复用
+
+**回滚条件**：
+- 如需恢复旧行为：evaluator 中 `_combine` 改为直接加权求和（None 视为 0）；
+  或将 `require_full_data_for_auto_install` 设为 false（仅关闭完备性门，重归一化仍生效）
+
+**关键文件**：
+- `ai-github-scanner/scanner/github_client.py`、`scanner/evaluator.py`、`run_scan.py`、`config.yaml`
+- `ai-github-scanner/validate_fix.py`、`reeval_all.py`（验证脚本）
+- `ai-github-scanner/data/evaluated/reeval_2026-10-07.json`（全量重评分结果）
 
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: ai-github-scanner
-description: AI驱动的GitHub资源自动筛选体系 + 7角色自分工AI协作团队 + 知识库自动归纳模块。自动扫描GitHub项目，按代码质量/活跃度/社区评价/实用性/安全信号五维评分，≥85分自动通过安全门后安装到~/.workbuddy/skills/。配套主导者/整体审查者/前端/后端/代码审查/信息寻找者/同步分发者/总结优化者8角色协作协议。v1.2.0 新增 knowledge/ 模块：项目完成 → 自动归纳总结 → 入库 → 索引 → 同步到 GitHub，与 evolution_log 形成"过程日志 + 项目档案"双轨记忆。当用户需要构建GitHub项目自动评估系统、搭建AI协作团队框架、批量筛选开源skill/plugin资源、定期扫描优质仓库并入体系、自动沉淀项目档案到知识库时使用本skill。本skill设计为可随时进化：评分权重、安全规则、扫描领域、角色协议、知识库扩展均通过 references/evolution_log.md 记录迭代历史，通过 assets/config_template.yaml 暴露所有可调参数。
-version: 1.2.0
+description: AI驱动的GitHub资源自动筛选体系 + 7角色自分工AI协作团队 + 知识库自动归纳模块。自动扫描GitHub项目，按代码质量/活跃度/社区评价/实用性/安全信号五维评分，≥85分自动通过安全门后安装到~/.workbuddy/skills/。配套主导者/整体审查者/前端/后端/代码审查/信息寻找者/同步分发者/总结优化者8角色协作协议。v1.2.0 新增 knowledge/ 模块：项目完成 → 自动归纳总结 → 入库 → 索引 → 同步到 GitHub，与 evolution_log 形成"过程日志 + 项目档案"双轨记忆。v1.2.1 修复数据完整性：二级指标（contributors/commits/releases/readme）增加REST兜底，缺失数据不按0分计（权重重归一化），核心证据缺失时禁止自动安装（降级为推荐）。当用户需要构建GitHub项目自动评估系统、搭建AI协作团队框架、批量筛选开源skill/plugin资源、定期扫描优质仓库并入体系、自动沉淀项目档案到知识库时使用本skill。本skill设计为可随时进化：评分权重、安全规则、扫描领域、角色协议、知识库扩展均通过 references/evolution_log.md 记录迭代历史，通过 assets/config_template.yaml 暴露所有可调参数。
+version: 1.2.1
 agent_created: true
 follow_up_questions: 最后询问用户是否需要立即部署或调整评分阈值
 ---

@@ -80,6 +80,41 @@ elif total >= 50: decision = record
 else: decision = drop
 ```
 
+## 缺失数据语义（v1.2.1）
+
+> 背景：2026-10-06 真实扫描发现 304/304 个项目的 contributors/commits/releases/readme
+> 四项二级数据全部为 0（gh 不可用且无 REST 兜底，静默返回空值被按 0 分计），
+> 导致总分被硬性封顶在 69.45 < 70 推荐阈值——任何项目都无法被推荐或安装。
+
+### 三态语义
+
+| 状态 | 代码表示 | 评分处理 |
+|------|----------|----------|
+| 真实值 | 数值 / 空list / 空str | 正常计分（0 也是真实值） |
+| 数据缺失 | `None` | **剔除该子项，其余子项权重按比例归一化**（不按 0 分计） |
+| 全部缺失 | 全为 `None` | 该维度返回中性分 50 |
+
+### 权重重归一化公式
+
+```
+score = Σ(可用子项分 × 子项权重) / Σ(可用子项权重)
+```
+
+例：activity 维度中 commits 数据缺失时 →
+`score = (push_score×0.40 + release_score×0.20) / 0.60`
+
+### 决策完备性门
+
+`auto_install` 属于危险动作（会自动安装代码），要求完整证据：
+
+```
+if total >= 85 且 核心证据缺失 → 降级为 recommend
+核心证据 = contributors / commits_last_4w / releases / readme 任一项
+```
+
+- 开关：`thresholds.require_full_data_for_auto_install`（默认 true）
+- 报告 JSON 中每项有 `missing_data` 字段列出缺失项；summary 加注"数据不完整"
+
 ## 常见调优场景
 
 | 场景 | 调整 |
@@ -88,6 +123,7 @@ else: decision = drop
 | 项目偏激进，多纳入新工具 | 降低 auto_install 到 80 |
 | 强调活跃度 | 提高 activity 到 0.30，降低 community 到 0.15 |
 | 强调安全 | 提高 safety 到 0.20，降低 practicality 到 0.15 |
+| 允许数据不完整时也自动安装 | `require_full_data_for_auto_install: false`（不建议） |
 | 纳入新维度 | 在 evaluator.py 加新维度，更新权重总和=1.0 |
 
 ## 验证方法
@@ -95,4 +131,5 @@ else: decision = drop
 1. 用 `scripts/run_eval.py` 对一批已知项目跑评分
 2. 检查 Top5 排序是否符合直觉
 3. 检查 `decision` 分布是否合理（auto_install占比通常10-30%）
-4. 如偏差，先调整权重而非公式
+4. **检查数据完备性**：确认没有大面积 `missing_data`（大面积缺失说明 API/认证出问题，先修数据链再调评分）
+5. 如偏差，先调整权重而非公式

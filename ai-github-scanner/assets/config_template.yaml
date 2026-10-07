@@ -72,6 +72,9 @@ thresholds:
   auto_install: 85
   recommend: 70
   record_only: 50
+  # 数据完备性门（v1.2.1）：核心证据(contributors/commits/releases/readme)缺失时，
+  # 即使总分≥85也降级为recommend，禁止自动安装（危险动作需完整证据）
+  require_full_data_for_auto_install: true
 
 # ===== 安全门规则 =====
 safety_gate:
