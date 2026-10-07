@@ -238,6 +238,7 @@ knowledge/
 | 脚本 | 用途 |
 |------|------|
 | `scripts/ingest_project.py` | 项目归纳入库 CLI |
+| `scripts/ingest_lesson.py` | 教训入库 CLI（v1.2.1 新增，支持 --json-file 传长文本） |
 | `scripts/build_kb_index.py` | 重建知识库索引 |
 | `scripts/sync_to_github.py` | 同步 skill + 知识库到 GitHub 仓库 |
 
